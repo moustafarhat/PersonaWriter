@@ -44,26 +44,6 @@ python scripts/scaffold.py my-style-writer /tmp/out /path/to/sample.txt
 python scripts/style_stats.py compare references/profile.json draft.txt
 ```
 
-## Why this is GitHub-ready
-
-This repo includes the basic project artifacts expected for a clean public or private repo:
-
-- a clear project description in this README
-- a standard `.gitignore` for Python and editor noise
-- an MIT license so the code can be shared legally
-- a structured skill folder with scripts and references
-- a git repository already initialized for the next push
-
-## Push to GitHub
-
-```bash
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin <your-repo-url>
-git push -u origin main
-```
-
 ## Notes
 
 This project is designed for style analysis and guided writing, not for direct production deployment. It is best used as a reusable writing assistant pattern for content generation workflows.
