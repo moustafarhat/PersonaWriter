@@ -6,36 +6,54 @@
   <img alt="AI Writing" src="https://img.shields.io/badge/Type-AI%20Writing%20Skill-8A2BE2" />
 </p>
 
-PersonaWriter is a style-capture system for building writer personas from real text. It analyzes a sample, extracts the traits that actually define the voice, and generates a reusable writing skill that can produce new text in that same style without copying the source verbatim.
+A style-capture system for turning a writing sample into a reusable writer persona.
 
-## Why this project exists
+PersonaWriter reads a text, measures the patterns that actually define its voice, and produces a dedicated writing skill that can generate new content in that same style without copying the source.
 
-Writing style is more than a list of adjectives. It is a set of repeatable decisions: cadence, rhetorical habits, sentence structure, paragraph rhythm, diction, and the things the writer deliberately avoids. PersonaWriter turns those patterns into a structured profile so a future writing task can stay faithful to the original voice while staying original in content.
+## Overview
 
-## Features
+Most writing styles are not just adjectives like "warm" or "formal." They are repeatable decisions about rhythm, structure, paragraph flow, rhetorical habits, punctuation, diction, and what the writer deliberately avoids.
 
-- analyzes writing samples for rhythm, sentence length, punctuation, voice, and paragraph structure
-- extracts style signals rather than generic tone labels
-- scaffolds a dedicated writer skill for a given persona
-- compares drafts against a saved style profile to check drift
-- keeps output creative and original while preserving a recognizable voice
-- works with multilingual writing samples and flexible writing genres
+PersonaWriter is built around that idea. It helps you:
 
-## Quick start
+- analyze a sample text for voice and rhythm
+- isolate the traits that matter most
+- store them as a reusable style profile
+- generate a dedicated skill that writes in that persona
+- validate draft output against the original style signals
 
-1. Prepare a source text sample such as `sample.txt`.
-2. Run the scaffold command:
+## How it works
+
+1. Feed in a source text or article sample.
+2. Measure sentence rhythm, paragraph shape, punctuation habits, and recurring patterns.
+3. Extract the style guide: load-bearing traits, never-list, and dosage rules.
+4. Scaffold a writer skill that follows the learned voice.
+5. Compare new drafts to the stored profile to catch drift and keep the style consistent.
+
+## Example workflow
 
 ```bash
 python scripts/scaffold.py my-style-writer /tmp/out /path/to/sample.txt
-```
-
-3. Fill in the generated skill files using the project instructions.
-4. Validate a draft against the profile:
-
-```bash
 python scripts/style_stats.py compare references/profile.json draft.txt
 ```
+
+This gives you a generated persona-style writer folder that can then be refined with a style guide, anchors, and writing instructions.
+
+## Features
+
+- sentence and paragraph rhythm analysis
+- punctuation and stylistic drift checking
+- recurring phrase and vocabulary tracking
+- persona-style writer scaffolding
+- multilingual text support
+- reusable writing skill generation
+
+## Use cases
+
+- preserve your own writing voice as a reusable skill
+- build a brand voice from prior articles or posts
+- imitate a style for study or creative adaptation without copying source text
+- generate new drafts for essays, articles, or narrative writing using a known persona
 
 ## Project structure
 
@@ -55,16 +73,9 @@ python scripts/style_stats.py compare references/profile.json draft.txt
 └── .git/
 ```
 
-## Use cases
-
-- clone your own voice into a reusable writing assistant
-- build a brand voice from past content
-- study a published author or essayist without copying text
-- generate drafts that match a target stylistic profile for essays, articles, or narrative writing
-
 ## Notes
 
-This project is designed for style analysis and guided writing workflows rather than production deployment. It is best used as a reusable skill-layer for AI-assisted writing and persona modeling.
+This project is designed for style analysis and guided writing workflows rather than production deployment. It is best used as a reusable tool for AI-assisted writing, persona modeling, and creative drafting.
 
 ## License
 
