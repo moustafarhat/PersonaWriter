@@ -1,0 +1,69 @@
+# PersonaWriter
+
+PersonaWriter is a Claude-style skill that turns a writing sample into a reusable style profile and a dedicated writing skill. The project captures rhythm, syntax, structure, diction, and recurring habits from a source text, then helps generate new text that feels like that voice without copying the source verbatim.
+
+## What this project does
+
+- analyzes a sample text and turns it into measurable style signals
+- records the load-bearing traits, never-list, and dosage rules
+- scaffolds a new writer skill for a given style
+- compares a draft against the saved profile to catch drift
+- keeps the output original while preserving the target voice
+
+## Repository structure
+
+```text
+.
+├── SKILL.md
+├── README.md
+├── .gitignore
+├── LICENSE
+├── references/
+│   ├── generated-skill-template.md
+│   ├── style-dimensions.md
+│   └── ...
+├── scripts/
+│   ├── scaffold.py
+│   └── style_stats.py
+└── .git/
+```
+
+## Quick start
+
+1. Prepare a sample text file such as `sample.txt`.
+2. Run the scaffold command:
+
+```bash
+python scripts/scaffold.py my-style-writer /tmp/out /path/to/sample.txt
+```
+
+3. Fill in the generated skill files using the instructions in the skill itself.
+4. Validate the output with:
+
+```bash
+python scripts/style_stats.py compare references/profile.json draft.txt
+```
+
+## Why this is GitHub-ready
+
+This repo includes the basic project artifacts expected for a clean public or private repo:
+
+- a clear project description in this README
+- a standard `.gitignore` for Python and editor noise
+- an MIT license so the code can be shared legally
+- a structured skill folder with scripts and references
+- a git repository already initialized for the next push
+
+## Push to GitHub
+
+```bash
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin <your-repo-url>
+git push -u origin main
+```
+
+## Notes
+
+This project is designed for style analysis and guided writing, not for direct production deployment. It is best used as a reusable writing assistant pattern for content generation workflows.
