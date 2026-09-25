@@ -12,10 +12,9 @@ jobs:
         python: ["3.9", "3.13"]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
+      # script tests + skill package checks (frontmatter, manifests, release zip layout)
       - run: python -m unittest discover tests -v
-      - name: Validate plugin manifests
-        run: python -c "import json; [json.load(open(f, encoding='utf-8')) for f in ('.claude-plugin/plugin.json', '.claude-plugin/marketplace.json')]"

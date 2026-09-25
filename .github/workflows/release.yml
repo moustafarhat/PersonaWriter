@@ -13,11 +13,18 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - run: python -m unittest discover tests
+      - name: Check tag matches plugin version
+        run: |
+          version=$(python -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match plugin.json version $version"
+            exit 1
+          fi
       - name: Build skill zip
         run: |
           cd skills

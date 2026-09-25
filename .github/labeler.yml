@@ -1,0 +1,19 @@
+skill:
+  - changed-files:
+      - any-glob-to-any-file: skills/**
+
+scripts:
+  - changed-files:
+      - any-glob-to-any-file: skills/*/scripts/**
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file: tests/**
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file: ["*.md", "skills/*/references/**"]
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: [".github/**", ".claude-plugin/**"]
