@@ -23,7 +23,7 @@ any section that has nothing distinctive to say - an empty section is noise.
 │   ├── anchors.md            # a few short excerpts to tune the ear
 │   └── profile.json          # metrics saved by `style_stats.py analyze --json`
 └── scripts/
-    └── style_stats.py        # copied from style-forge, used for the drift check
+    └── style_stats.py        # copied from PersonaWriter, used for the drift check
 ```
 
 Slug: lowercase, hyphens, ends in `-writer` (e.g. `essayist-warm-writer`, `nahj-hikayat-writer`).
@@ -61,7 +61,7 @@ Language(s): <language and register/dialect>.
 2. **Draft in one pass** with the load-bearing traits (the top of the style guide) in place from
    the first sentence. Do not write neutral prose and "add style" afterwards - that produces a
    costume instead of a voice.
-3. **Check drift.** Save the draft to a file and run:
+3. **Check drift.** Save the draft to a file and run (`python` or `python3`):
    `python scripts/style_stats.py compare references/profile.json draft.txt`
    Treat flagged metrics as hints, not commands - fix the ones that make the voice feel off
    (typically sentence length and paragraph shape), ignore noise on short drafts.
@@ -78,7 +78,7 @@ Language(s): <language and register/dialect>.
 - Write original text. Do not reproduce passages from the source, and do not invent quotes
   attributed to real people.
 - This style guide describes patterns for an original writer to follow; do not present the output
-  as authored by the source's author.
+  as authored by the source's author, or as a message from any real person other than the user.
 - Facts must still be correct. Style never justifies making things up.
 ```
 

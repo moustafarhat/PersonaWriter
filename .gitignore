@@ -17,8 +17,11 @@ Thumbs.db
 *.log
 *.tmp
 *.bak
+/dist/
+/personawriter.zip
 
-# Local data
-sample.txt
-draft.txt
-profile.json
+# Local working data (root only, so example skills can still ship a profile.json)
+/sample.txt
+/draft.txt
+/profile.json
+/personawriter-work/

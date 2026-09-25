@@ -13,7 +13,7 @@ generic. Every observation should be backed by something you can point to in the
 5. Structure and movement
 6. Content moves (how ideas get handled)
 7. Fiction-specific
-8. Language-specific notes (Arabic, German, English)
+8. Language-specific notes (Arabic, German, English, Romance languages, others)
 9. Separating style from content
 
 ---
@@ -87,6 +87,15 @@ generic. Every observation should be backed by something you can point to in the
 
 **English**
 - Latinate vs plain vocabulary, contractions, sentence fragments, phrasal verbs, spelling variant (US/UK).
+
+**French / Spanish / Portuguese / Italian**
+- Address: tu/vous, tú/usted/vos, tu/você, tu/Lei - and whether it shifts. Regional variants (e.g. Rioplatense voseo, European vs Brazilian Portuguese) are style decisions.
+- Subject pronouns are often dropped in Spanish, Italian and Portuguese, so person lives in verb endings - read for it, the metrics will undercount it.
+- Punctuation conventions: French spaces before `; : ? !` and « guillemets », Spanish ¿ ¡ openers, dialogue with em-dashes (—) rather than quote marks.
+- Tense for narration (passé simple vs passé composé, pretérito vs presente histórico) and sentence length (Romance prose tolerates long subordinate chains).
+
+**Other languages**
+- The metrics still measure rhythm, paragraphs and punctuation, but person counts are skipped and phrase lists may include function words. Lean more on close reading. For Chinese and Japanese, lengths are counted in characters.
 
 ## 9. Separating style from content
 

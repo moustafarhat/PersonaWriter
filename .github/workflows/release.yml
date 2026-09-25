@@ -1,0 +1,28 @@
+name: release
+
+# Push a tag like v1.1.0 to publish a GitHub Release with personawriter.zip attached,
+# ready to upload in claude.ai / Claude Desktop (Settings -> Capabilities -> Skills).
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m unittest discover tests
+      - name: Build skill zip
+        run: |
+          cd skills
+          zip -r ../personawriter.zip personawriter -x '*/__pycache__/*'
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" personawriter.zip --title "PersonaWriter $GITHUB_REF_NAME" --generate-notes

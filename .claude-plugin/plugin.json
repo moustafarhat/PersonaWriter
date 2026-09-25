@@ -1,0 +1,13 @@
+{
+  "name": "personawriter",
+  "version": "1.1.0",
+  "description": "Capture any writing style from a sample and turn it into a reusable skill that writes new text in that voice. English, German, Arabic (MSA and dialects), French, Spanish and more.",
+  "author": {
+    "name": "Moustafa Farhat",
+    "url": "https://github.com/moustafarhat"
+  },
+  "homepage": "https://github.com/moustafarhat/PersonaWriter",
+  "repository": "https://github.com/moustafarhat/PersonaWriter",
+  "license": "MIT",
+  "keywords": ["writing", "style", "voice", "tone", "persona", "brand-voice", "ghostwriting", "arabic", "multilingual", "skills"]
+}
