@@ -43,6 +43,8 @@ python -m unittest discover tests -v
 
 ## Releasing (maintainers)
 
-Bump `version` in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`, update
-`CHANGELOG.md`, then push a tag: `git tag v1.2.0 && git push --tags`. The release workflow
-attaches `personawriter.zip` automatically.
+Bump `version` in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` and add a
+`## <version>` section to `CHANGELOG.md` (the tests check all three agree). When that reaches
+`main`, the release workflow sees a version without a release, runs the tests, creates the
+`v<version>` tag and publishes a GitHub Release with `personawriter.zip` and the changelog
+section as notes. No manual tagging. Pushes that don't change the version do nothing.
