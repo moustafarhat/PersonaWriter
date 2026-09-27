@@ -8,7 +8,12 @@ Thanks for helping. The most useful contributions, roughly in order:
 2. **New languages.** See below. Usually a small PR.
 3. **Example skills** built from **public-domain** texts (e.g. authors who died more than 70 years
    ago), placed in `examples/<slug>-writer/`, with the two test drafts included.
-4. Fixes to the scripts, docs and translations of the README.
+4. **Skills and outputs you built.** Add a row to the "Built with PersonaWriter? Share it" table
+   in the README, linking to your skill's own repo and one example output with its
+   `compare` / `check` / `overlap` results. Outputs written with an existing skill go to that
+   skill's examples, e.g. the Arabic skill's
+   [Share your essays](https://github.com/moustafarhat/arabic-critic-essay-writer#share-your-essays) guide.
+5. Fixes to the scripts, docs and translations of the README.
 
 ## Adding a language
 
