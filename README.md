@@ -58,6 +58,27 @@ with measured dosage targets, and an
 on a topic the source never touched, with its check results. The example page also shows the first
 draft failing the dosage check for overusing the voice's signature moves, and what was cut to fix it.
 
+For a longer piece, read
+[«infinite regress, from Zeno to Gödel»](https://github.com/moustafarhat/arabic-critic-essay-writer/blob/main/examples/infinite-regress-zeno-to-godel.md),
+a 1,270-word philosophy essay written with the same skill. The source was music criticism, so this
+is the voice moved to a genre it never saw (97/100 similarity, no never-list hits).
+
+### Built with PersonaWriter? Share it
+
+Built a style skill, or wrote something good with one? Add it here so others can see what
+PersonaWriter produces:
+
+| Skill | Language | What it writes | Examples |
+|---|---|---|---|
+| [arabic-critic-essay-writer](https://github.com/moustafarhat/arabic-critic-essay-writer) | Arabic (MSA) | Reviews, cultural and philosophical essays in a reflective critic's voice | [2 essays](https://github.com/moustafarhat/arabic-critic-essay-writer#example) |
+
+Open a pull request that adds a row, linking to your skill's repo or folder and, if you can, one
+example output with its `compare` / `check` / `overlap` results. Outputs written with an existing
+skill are welcome too: add them to that skill's examples (the Arabic skill has a
+[Share your essays](https://github.com/moustafarhat/arabic-critic-essay-writer#share-your-essays)
+guide). Please share only skills built from your own writing, public-domain texts, or voices you
+have the right to capture, and only original output.
+
 ## Install
 
 **Claude Code** (plugin marketplace):
