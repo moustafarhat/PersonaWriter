@@ -19,6 +19,8 @@
 - New **Profile only** mode; Update mode also refreshes markers and anchors and works on style
   skills built elsewhere.
 - Generated skills get `markers.json`, the three-step drift check, and a "Rewriting a draft" section.
+- Releases publish automatically: when `main` carries a version without a release, the workflow
+  tests, tags and publishes `personawriter.zip`. No manual tags.
 - SKILL.md: intake strips non-author material, one voice per skill, a manual path when code
   cannot run, a 70+ score target in the proving step, and a "drift watch-list" in the guide.
 
