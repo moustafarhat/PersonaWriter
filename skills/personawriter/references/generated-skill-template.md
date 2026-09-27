@@ -1,6 +1,6 @@
 # Template for a generated style skill
 
-The output of PersonaWriter is a folder named `<style-slug>-writer/`. Use the three
+The output of PersonaWriter is a folder named `<style-slug>-writer/`. Use the
 templates below, filling every `<...>` with what you learned from the sample. Delete
 any section that has nothing distinctive to say - an empty section is noise.
 
@@ -9,6 +9,7 @@ any section that has nothing distinctive to say - an empty section is noise.
 2. SKILL.md template
 3. references/style-guide.md template
 4. references/anchors.md template
+4b. references/markers.json template
 5. Quality bar for the finished skill
 
 ---
@@ -21,7 +22,8 @@ any section that has nothing distinctive to say - an empty section is noise.
 ├── references/
 │   ├── style-guide.md        # the full analysis (read on every writing task)
 │   ├── anchors.md            # a few short excerpts to tune the ear
-│   └── profile.json          # metrics saved by `style_stats.py analyze --json`
+│   ├── profile.json          # metrics measured from the sample (written by scaffold.py)
+│   └── markers.json          # signature-move dosage + never-list as regexes
 └── scripts/
     └── style_stats.py        # copied from PersonaWriter, used for the drift check
 ```
@@ -62,9 +64,12 @@ Language(s): <language and register/dialect>.
    the first sentence. Do not write neutral prose and "add style" afterwards - that produces a
    costume instead of a voice.
 3. **Check drift.** Save the draft to a file and run (`python` or `python3`):
-   `python scripts/style_stats.py compare references/profile.json draft.txt`
+   `python scripts/style_stats.py compare references/profile.json draft.txt` (score and top fixes)
+   `python scripts/style_stats.py check references/markers.json draft.txt` (dosage and never-list)
+   `python scripts/style_stats.py overlap draft.txt references/anchors.md` (no copying)
    Treat flagged metrics as hints, not commands - fix the ones that make the voice feel off
-   (typically sentence length and paragraph shape), ignore noise on short drafts.
+   (typically sentence length and paragraph shape), ignore noise on drafts under ~250 words.
+   If you cannot run code, check the never-list and dosage by reading.
 4. **Read against the never-list** in the style guide and cut every violation.
 5. **Deliver** the text. Add a one-line note only if you made an assumption or the user should
    choose between options. No commentary about the style unless asked.
@@ -73,6 +78,10 @@ Language(s): <language and register/dialect>.
 <List 3-6 adjustable aspects with what "more" and "less" mean, e.g.:
 - warmth: more = direct address and confession; less = observational distance
 - density of signature moves: default is <x per page>; "lighter" = half, "stronger" = 1.5x>
+
+## Rewriting a draft
+Keep every fact, name, number and quote of the draft; change how it is said, not what. Apply the
+same procedure from step 2, using the draft's content as the brief.
 
 ## Guardrails
 - Write original text. Do not reproduce passages from the source, and do not invent quotes
@@ -161,10 +170,43 @@ Rules for anchors:
 
 ---
 
+## 4b. references/markers.json template
+
+Turns the dosage and never-list into checks that `style_stats.py check` can run. Patterns are
+Python regexes, matched case-insensitively on normalised text (lowercase, Arabic diacritics and
+tatweel removed, alef variants and alef maqsura unified), so write them in that form.
+
+```json
+{
+  "dosage": [
+    {"name": "negation then correction", "patterns": ["\\bnot\\b[^.]{0,60}\\bbut\\b", "ليس[^.]{0,80}(?:بل|وانما)"], "per1k": [3, 7]},
+    {"name": "first-person pivot", "patterns": ["\\bhere is what i (?:believe|think)\\b"], "per1k": [0.5, 3]}
+  ],
+  "never": [
+    {"name": "exclamation mark", "pattern": "!"},
+    {"name": "bullet list", "pattern": "^\\s*[-*•]\\s"},
+    {"name": "recap ending", "pattern": "\\bin conclusion\\b|في الختام"}
+  ],
+  "paragraph_openers_no_repeat": ["^(?:لا|ليس)\\b"]
+}
+```
+
+How to set it:
+- 3-6 dosage entries for the signature moves that can be caught by a pattern. Run
+  `style_stats.py check references/markers.json <sample>` and set each range around the measured
+  rate (roughly 0.6x to 1.5x). Moves that no regex can catch (imagery, stance) stay in the guide only.
+- 4-10 never entries straight from the never-list.
+- `paragraph_openers_no_repeat` (optional): openers that must not start two paragraphs in a row.
+- Keep patterns tight; a noisy pattern is worse than none.
+- Chinese/Japanese: rates are per 1,000 characters, and `\b` does not work between CJK characters.
+
+---
+
 ## 5. Quality bar for the finished skill
 
 - **Concrete:** every trait is a mechanism plus evidence, not an adjective.
 - **Prioritized:** the top five traits are marked as load-bearing.
 - **Bounded:** the never-list and dosage sections prevent caricature.
 - **Portable:** works on topics unrelated to the source (validated in the test-writing step).
+- **Checkable:** markers.json encodes the dosage and never-list; `validate.py` passes.
 - **Lean:** SKILL.md under ~100 lines; the detail lives in the style guide.

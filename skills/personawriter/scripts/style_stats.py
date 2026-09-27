@@ -1,21 +1,34 @@
 #!/usr/bin/env python3
 """style_stats.py - quantitative fingerprint of a writing style.
 
-Two commands:
+Commands:
 
   analyze FILE [FILE ...] [--json OUT.json]
       Measure sentence rhythm, paragraph shape, punctuation habits, vocabulary
       texture, sentence openers and recurring phrases. Prints a readable report
       and optionally saves the numbers as a JSON "profile".
 
-  compare PROFILE.json DRAFT_FILE
+  compare PROFILE.json DRAFT_FILE [--json]
       Measure a new draft and show, metric by metric, how far it is from the
-      profile. Use it as a sanity check while writing in a captured style.
+      profile. Prints a similarity score and the three most important fixes first.
+
+  check MARKERS.json DRAFT_FILE [--json]
+      Count the style's own signature moves (dosage per 1,000 words) and
+      never-list violations, as defined in the skill's references/markers.json.
+
+  overlap DRAFT_FILE SOURCE [SOURCE ...] [--n 8] [--json]
+      Find word sequences (default 8+ words; twice as many characters for
+      Chinese/Japanese) that the draft shares verbatim with the source or the
+      anchors. Any hit means copying: rewrite it.
+
+Exit code: 0 = ok, 1 = problems found (compare: score below 70; check:
+violations or dosage out of range; overlap: shared sequences), 2 = usage error.
 
 Works on any language written in Unicode. Stop-words and person pronouns are
 built in for English, German, French, Spanish, Portuguese, Italian and Arabic;
 other languages get every metric except the person counts. Chinese and
-Japanese are measured in characters instead of words.
+Japanese are measured in characters instead of words. Markdown, code, URLs and
+hard line wraps (PDF/e-book copies) are cleaned out before measuring.
 Sentence splitting is heuristic, so treat numbers as good approximations, not
 exact truth. Numbers describe the surface; the real style lives in the
 qualitative analysis - use this as evidence, not as the goal.
@@ -150,12 +163,48 @@ def ngrams(tokens, n):
     return zip(*[tokens[i:] for i in range(n)])
 
 
-def analyze_text(text):
-    text = TASHKEEL.sub("", text.replace("\r\n", "\n"))
+LINE_END = rf"[.!?؟…。！？:{CLOSERS}]"  # a line ending in one of these was not hard-wrapped
+
+
+def unwrap(text):
+    """Join hard-wrapped lines (PDF/e-book copies) back into paragraphs.
+    A line is treated as wrapped when most lines are long and don't end a sentence."""
+    lines = [l for l in text.split("\n") if l.strip()]
+    if len(lines) < 8:
+        return text
+    typical = sorted(len(l) for l in lines)[len(lines) // 2]
+    open_ends = sum(1 for l in lines if not re.search(LINE_END + r"\s*$", l))
+    if typical < 45 or open_ends / len(lines) < 0.5:
+        return text
+    out = re.sub(rf"(?<!{LINE_END})[ \t]*\n(?!\s*\n)[ \t]*", " ", text)
+    return re.sub(r"(?<=[^\W\d_])-\s(?=[a-zäöüßàâçéèêëîïôûù])", "", out)  # re-join hyphenated breaks
+
+
+def clean(text, keep_markup=False):
+    """Remove what is not prose: code, URLs, HTML, Markdown markers, front matter.
+    keep_markup=True keeps headings, list markers and bold (for never-list checks)."""
+    text = text.replace("\r\n", "\n").lstrip("﻿")
+    text = re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.S)
+    text = re.sub(r"```.*?```|~~~.*?~~~", "\n\n", text, flags=re.S)
+    text = re.sub(r"<[^>\n]+>", " ", text)
+    text = re.sub(r"`[^`\n]+`", " ", text)
+    text = re.sub(r"!?\[([^\]\n]*)\]\([^)\n]*\)", r"\1", text)
+    text = re.sub(r"https?://\S+|www\.\S+", " ", text)
+    if keep_markup:
+        return text
+    text = re.sub(r"^[ \t]*#{1,6}[ \t]+", "", text, flags=re.M)
+    text = re.sub(r"^[ \t]*(?:[-*•]|\d+[.)])[ \t]+", "", text, flags=re.M)
+    text = re.sub(r"\*\*|__", "", text)
+    return unwrap(text)
+
+
+def analyze_text(text, min_words=50):
+    text = TASHKEEL.sub("", clean(text))
     tokens = WORD.findall(text)
     n_words = len(tokens)
-    if n_words < 50:
-        raise SystemExit("Sample too short to measure (need at least ~50 words; 1,500+ is far better).")
+    if n_words < min_words:
+        raise SystemExit(f"Text too short to measure ({n_words} words; need at least {min_words}, "
+                         "1,500+ is far better for a source).")
     lw = [t.casefold() for t in tokens]
     lang = detect_lang(text, tokens)
     stop = STOP.get(lang, set())
@@ -305,34 +354,152 @@ FLOOR = {"quoted_share": 0.03, "opener_top1_share": 0.05, "first_person_per1k": 
 PUNCT_FLOOR = 1.5
 
 
-def compare(profile, draft):
+WEIGHTS = {  # how much each metric matters for how a voice *feels*; punctuation rows weigh 1
+    "mean_sentence_len": 3, "sentence_len_cv": 3, "burstiness": 2, "paragraph_len_sentences": 2,
+    "avg_word_len": 1, "ttr_500": 1, "quoted_share": 1, "first_person_per1k": 2,
+    "second_person_per1k": 2, "opener_top1_share": 1,
+}
+
+
+def compare_data(profile, draft):
+    """Score a draft profile against a source profile (0-100) and list the top fixes."""
     scale = 1.5 if draft["words"] < 400 else 1.0  # short drafts: widen every tolerance
     rows = []
     for k, (hi, lo, tol) in HINTS.items():
         s, d = profile.get(k), draft.get(k)
         if s is None or d is None:
             continue
-        rows.append((k, s, d, hi, lo, tol, FLOOR.get(k, 0)))
+        rows.append((k, s, d, hi, lo, tol, FLOOR.get(k, 0), WEIGHTS.get(k, 1)))
     for k, s in profile["punct_per1k"].items():
         d = draft["punct_per1k"].get(k, 0)
-        rows.append((f"{k}/1k", s, d, f"more {k} than the source", f"fewer {k} than the source", PUNCT_TOL, PUNCT_FLOOR))
+        rows.append((f"{k}/1k", s, d, f"more {k} than the source", f"fewer {k} than the source",
+                     PUNCT_TOL, PUNCT_FLOOR, 1))
+    out, total, good = [], 0, 0.0
+    for name, s, d, hi, lo, tol, floor, w in rows:
+        dev = abs(d - s) / max(abs(s), 1e-9)
+        allowed = tol * scale
+        ok = max(abs(s), abs(d)) < floor or dev <= allowed
+        total += w
+        good += w if ok else w * max(0.0, 1 - (dev - allowed))  # partial credit for near misses
+        out.append({"metric": name, "source": s, "draft": d, "ok": ok, "weight": w,
+                    "deviation": round(dev, 2), "tolerance": round(allowed, 2),
+                    "hint": "" if ok else (hi if d > s else lo)})
+    score = round(100 * good / total) if total else 100
+    misses = [r for r in out if not r["ok"]]
+    fixes = sorted(misses, key=lambda r: -r["weight"] * min(r["deviation"] / max(r["tolerance"], 1e-9), 3))[:3]
+    return {"score": score, "rows": out, "top_fixes": [f"{r['metric']}: {r['hint']}" for r in fixes],
+            "draft_words": draft["words"]}
 
-    L = [f"{'metric':<26}{'source':>10}{'draft':>10}   verdict"]
-    off = 0
-    for name, s, d, hi, lo, tol, floor in rows:
-        ok = max(abs(s), abs(d)) < floor or abs(d - s) <= tol * scale * max(abs(s), 1e-9)
-        if ok:
-            verdict = "ok"
-        else:
-            off += 1
-            verdict = "-> " + (hi if d > s else lo)
-        L.append(f"{name:<26}{s:>10}{d:>10}   {verdict}")
+
+def compare(profile, draft):
+    res = compare_data(profile, draft)
+    L = [f"Similarity score: {res['score']}/100 (surface metrics only; 70+ is usually close enough)"]
+    if res["top_fixes"]:
+        L.append("Fix first:")
+        L += [f"  {i}. {f}" for i, f in enumerate(res["top_fixes"], 1)]
     L.append("")
-    L.append(f"{off} of {len(rows)} metrics outside their tolerance.")
+    L.append(f"{'metric':<26}{'source':>10}{'draft':>10}   verdict")
+    off = 0
+    for r in res["rows"]:
+        if not r["ok"]:
+            off += 1
+        L.append(f"{r['metric']:<26}{r['source']:>10}{r['draft']:>10}   {'ok' if r['ok'] else '-> ' + r['hint']}")
+    L.append("")
+    L.append(f"{off} of {len(res['rows'])} metrics outside their tolerance.")
     if draft["words"] < 200:
         L.append("(!) Draft under 200 words: these numbers are noisy - weigh them lightly.")
     L.append("Reminder: metrics catch surface drift only. Re-read the draft against the style guide's signature moves and never-list.")
     return "\n".join(L)
+
+
+# ------------------------------------------------------------ markers check
+_AR_UNIFY = str.maketrans({"آ": "ا", "أ": "ا", "إ": "ا", "ى": "ي"})
+
+
+def norm(text):
+    """Normalise for matching: no diacritics/tatweel, unified alef/ya, casefolded."""
+    return TASHKEEL.sub("", text).translate(_AR_UNIFY).casefold()
+
+
+def norm_pat(pattern):
+    """Normalise a regex the same way, without casefolding (\\S must stay \\S)."""
+    return TASHKEEL.sub("", pattern).translate(_AR_UNIFY)
+
+
+def check_data(markers, raw):
+    """markers.json format:
+    {"dosage": [{"name": "...", "patterns": ["regex", ...], "per1k": [min, max]}],
+     "never":  [{"name": "...", "pattern": "regex"}],
+     "paragraph_openers_no_repeat": ["regex", ...]}    (optional)
+    Patterns are matched on normalised text (see norm), multiline, case-insensitive."""
+    text = norm(clean(raw, keep_markup=True))
+    words = max(len(WORD.findall(text)), 1)
+    res = {"words": words, "dosage": [], "never": [], "problems": 0}
+    for d in markers.get("dosage", []):
+        n = sum(len(re.findall(norm_pat(p), text, flags=re.M | re.I)) for p in d["patterns"])
+        rate = round(n * 1000 / words, 2)
+        lo, hi = d.get("per1k", [0, 1e9])
+        status = "ok" if lo <= rate <= hi else ("too few" if rate < lo else "too many")
+        if status != "ok" and words >= 250:
+            res["problems"] += 1
+        res["dosage"].append({"name": d["name"], "count": n, "per1k": rate, "target": [lo, hi], "status": status})
+    for v in markers.get("never", []):
+        hits = [m.group(0).strip()[:60] for m in re.finditer(norm_pat(v["pattern"]), text, flags=re.M | re.I)]
+        if hits:
+            res["problems"] += 1
+            res["never"].append({"name": v["name"], "count": len(hits), "examples": hits[:3]})
+    pats = markers.get("paragraph_openers_no_repeat", [])
+    if pats:
+        paras = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
+        flags_ = [any(re.match(norm_pat(p), para, flags=re.I) for p in pats) for para in paras]
+        runs = sum(1 for a, b in zip(flags_, flags_[1:]) if a and b)
+        if runs:
+            res["problems"] += 1
+            res["never"].append({"name": "consecutive paragraphs open with the same move", "count": runs, "examples": []})
+    return res
+
+
+def check(markers, raw):
+    r = check_data(markers, raw)
+    L = [f"Signature check on {r['words']} words: {'OK' if not r['problems'] else str(r['problems']) + ' problem(s)'}"]
+    if r["words"] < 250:
+        L.append("(!) Under 250 words: dosage is only indicative, not enforced.")
+    if r["dosage"]:
+        L.append("\nDosage (per 1,000 words):")
+        for d in r["dosage"]:
+            L.append(f"  {d['name']:<38} {d['per1k']:>6}  target {d['target'][0]}-{d['target'][1]}   {d['status']}")
+    if r["never"]:
+        L.append("\nNever-list violations:")
+        for v in r["never"]:
+            ex = f"  e.g. {' | '.join(v['examples'])}" if v["examples"] else ""
+            L.append(f"  - {v['name']} (x{v['count']}){ex}")
+    return "\n".join(L), r
+
+
+# ------------------------------------------------------------ copy check
+def overlap_data(draft, sources, n=8):
+    """Find runs of n+ tokens the draft shares verbatim with any source (CJK: 2n characters)."""
+    dt = WORD.findall(norm(clean(draft)))
+    cjk = bool(dt) and sum(1 for t in dt if CJK_CHAR.match(t)) / len(dt) > 0.3
+    if cjk:
+        n *= 2  # one CJK token is one character, roughly half a word
+    joiner = "" if cjk else " "
+    grams = set()
+    for src in sources:
+        st = WORD.findall(norm(clean(src)))
+        grams.update(tuple(st[i:i + n]) for i in range(len(st) - n + 1))
+    spans, i = [], 0
+    while i <= len(dt) - n:
+        if tuple(dt[i:i + n]) in grams:
+            j = i + n
+            while j < len(dt) and tuple(dt[j - n + 1:j + 1]) in grams:
+                j += 1
+            spans.append(joiner.join(dt[i:j]))
+            i = j
+        else:
+            i += 1
+    return {"n": n, "shared_sequences": spans,
+            "shared_words": sum(len(s) if cjk else len(s.split()) for s in spans)}
 
 
 def read_files(paths):
@@ -354,6 +521,16 @@ def main():
     c = sub.add_parser("compare", help="compare a draft to a saved profile")
     c.add_argument("profile")
     c.add_argument("draft")
+    c.add_argument("--json", action="store_true")
+    k = sub.add_parser("check", help="count signature moves and never-list violations")
+    k.add_argument("markers")
+    k.add_argument("draft")
+    k.add_argument("--json", action="store_true")
+    o = sub.add_parser("overlap", help="find word sequences copied from the source/anchors")
+    o.add_argument("draft")
+    o.add_argument("sources", nargs="+")
+    o.add_argument("--n", type=int, default=8)
+    o.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
     if args.cmd == "analyze":
@@ -363,10 +540,32 @@ def main():
             with open(args.json, "w", encoding="utf-8") as f:
                 json.dump(prof, f, ensure_ascii=False, indent=2)
             print(f"\nProfile saved to {args.json}")
-    else:
+        return 0
+    if args.cmd == "compare":
         with open(args.profile, encoding="utf-8") as f:
             prof = json.load(f)
-        print(compare(prof, analyze_text(read_files([args.draft]))))
+        draft = analyze_text(read_files([args.draft]), min_words=30)
+        res = compare_data(prof, draft)
+        print(json.dumps(res, ensure_ascii=False, indent=2) if args.json else compare(prof, draft))
+        return 0 if res["score"] >= 70 else 1
+    if args.cmd == "check":
+        with open(args.markers, encoding="utf-8") as f:
+            markers = json.load(f)
+        text, res = check(markers, read_files([args.draft]))
+        print(json.dumps(res, ensure_ascii=False, indent=2) if args.json else text)
+        return 1 if res["problems"] else 0
+    if args.cmd == "overlap":
+        res = overlap_data(read_files([args.draft]), [read_files([p]) for p in args.sources], args.n)
+        if args.json:
+            print(json.dumps(res, ensure_ascii=False, indent=2))
+        elif res["shared_sequences"]:
+            print(f"COPYING: {len(res['shared_sequences'])} sequence(s) of {res['n']}+ tokens shared with the source:")
+            for sp in res["shared_sequences"]:
+                print(f"  - {sp}")
+        else:
+            print(f"OK: no {res['n']}-token sequence shared with the source.")
+        return 1 if res["shared_sequences"] else 0
+    return 2
 
 
 if __name__ == "__main__":

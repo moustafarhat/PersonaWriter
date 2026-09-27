@@ -41,6 +41,23 @@ Claude:  Measured 6,200 words. Your load-bearing traits: you open on a small con
 
 <!-- DEMO: add a real blind test here (one original paragraph + two generated, answer in a <details> block) or a GIF of the full flow. -->
 
+### Example: a skill built with PersonaWriter
+
+**[Arabic Critic Essay Writer](https://github.com/moustafarhat/arabic-critic-essay-writer)** was
+generated from a single 2,500-word Arabic music-criticism essay. It writes reviews (albums, films,
+books, series, exhibitions, games), cultural essays and opinion pieces in formal Arabic, in a
+reflective critic's voice: long qualified sentences landed by a short blunt one, "not X, but Y" as
+the engine of every thesis, one fair concession, and an ending that leaves the tension open.
+
+Look inside to see what PersonaWriter actually produces: a
+[style guide](https://github.com/moustafarhat/arabic-critic-essay-writer/blob/main/skills/arabic-critic-essay-writer/references/style-guide.md)
+built from decisions, a never-list, a drift watch-list learned while testing, a
+[markers.json](https://github.com/moustafarhat/arabic-critic-essay-writer/blob/main/skills/arabic-critic-essay-writer/references/markers.json)
+with measured dosage targets, and an
+[example essay](https://github.com/moustafarhat/arabic-critic-essay-writer/blob/main/examples/the-photos-we-never-look-at.md)
+on a topic the source never touched, with its check results. The example page also shows the first
+draft failing the dosage check for overusing the voice's signature moves, and what was cut to fix it.
+
 ## Install
 
 **Claude Code** (plugin marketplace):
@@ -84,6 +101,7 @@ Just talk to Claude. No special syntax needed.
 | "Write a LinkedIn post about our launch, in the style of this article: …" | **Quick mode:** analyzes the sample and writes the post right away, then offers to save the voice as a skill. |
 | "Turn my old blog posts into a skill that writes like me." | **Build mode:** full analysis, builds `<name>-writer`, tests it on unrelated topics, and refines it with your feedback. |
 | "Here are three more of my essays. Update my voice skill." | **Update mode:** re-measures, revises the style guide, and tells you what changed. |
+| "Just analyze how this author writes, I don't need a skill." | **Profile only:** delivers the style guide as a document. |
 | "اكتب مقالاً عن العمل عن بعد بأسلوب هذا النص" | Works the same in Arabic (MSA or dialect). |
 | "Schreib eine Produktankündigung im Stil dieses Textes." | …and in German, French, Spanish, and more. |
 
@@ -98,9 +116,10 @@ my-newsletter-writer/
 ├── references/
 │   ├── style-guide.md       # load-bearing traits, rhythm, diction, structure, never-list, dosage
 │   ├── anchors.md           # 5-10 short labelled excerpts, to tune the ear, never to copy
-│   └── profile.json         # the measured fingerprint
+│   ├── profile.json         # the measured fingerprint
+│   └── markers.json         # signature-move dosage + never-list as checkable patterns
 └── scripts/
-    └── style_stats.py       # drift check: compares every new draft to the fingerprint
+    └── style_stats.py       # drift, dosage and copy checks for every new draft
 ```
 
 ## Why it works
@@ -113,8 +132,12 @@ my-newsletter-writer/
   explaining the joke) is often the strongest signal, and the thing generic imitations miss.
 - **Dosage.** Signature moves get a frequency ("one aside per section, at most"). Without it you
   get a caricature.
-- **Measured drift.** Every draft can be checked against the source's numbers: sentence rhythm,
-  paragraph shape, punctuation habits, person, openers.
+- **Measured drift.** Every draft gets a similarity score against the source's numbers (sentence
+  rhythm, paragraph shape, punctuation habits, person, openers) plus the three fixes that matter most.
+- **Checked dosage and never-list.** `markers.json` turns signature moves and forbidden habits into
+  patterns, so overuse and violations are counted, not guessed.
+- **No copying.** An overlap check flags any passage shared verbatim with the source, and a
+  validator refuses to package a skill that reproduces it.
 - **Proven on new topics.** Each skill is tested on subjects the source never touched before it is
   handed over, with an optional blind test: can *you* tell which paragraph is real?
 
@@ -137,12 +160,25 @@ The scripts work on their own too:
 # fingerprint one or more texts
 python skills/personawriter/scripts/style_stats.py analyze essay1.txt essay2.txt --json profile.json
 
-# how far is a draft from that fingerprint?
+# how far is a draft from that fingerprint? (score 0-100 + top fixes)
 python skills/personawriter/scripts/style_stats.py compare profile.json draft.txt
+
+# dosage of signature moves and never-list hits
+python skills/personawriter/scripts/style_stats.py check markers.json draft.txt
+
+# did the draft copy from the source? (8+ shared words)
+python skills/personawriter/scripts/style_stats.py overlap draft.txt source.txt
 
 # scaffold a new style skill folder from samples
 python skills/personawriter/scripts/scaffold.py my-style-writer ./out sample.txt
+
+# check a finished skill, then zip it into an installable .skill file
+python skills/personawriter/scripts/validate.py ./out/my-style-writer --source sample.txt
+python skills/personawriter/scripts/package.py ./out/my-style-writer ./dist
 ```
+
+Add `--json` to `compare`, `check` or `overlap` for machine-readable output. Exit code 1 means
+problems were found (score under 70, violations, or copied text), so the tools work in CI.
 
 ## Ethics & fair use
 
@@ -165,7 +201,7 @@ case, and there is no ambiguity there.
 ├── skills/personawriter/    # the skill itself (this folder is what gets installed)
 │   ├── SKILL.md
 │   ├── references/          # analysis lens + templates for generated skills
-│   └── scripts/             # style_stats.py, scaffold.py
+│   └── scripts/             # style_stats.py, scaffold.py, validate.py, package.py
 └── tests/                   # python -m unittest discover tests
 ```
 
