@@ -37,11 +37,15 @@ This skill runs anywhere (Claude Code, claude.ai, Claude Desktop, the API, other
   reusable skill?" If yes, continue with Build mode from stage 2.
 - **Build mode** - the user asks for a skill, agent, reusable voice, or brand voice, or accepts
   the offer above. Do all stages.
-- **Update mode** - the user has an existing style skill (built by PersonaWriter) and gives more
-  samples or feedback. Re-run stage 2 into the same folder on all samples you have (the originals
-  are usually not stored in the skill - that is fine, measure the new ones; the scaffold keeps the
-  old numbers as `references/profile.previous.json` so you can weigh the two). Re-read against the existing style guide and revise it: keep what
-  still holds, fix what the new material contradicts, and tell the user what changed.
+- **Update mode** - the user has an existing style skill (from PersonaWriter or elsewhere) and gives
+  more samples or feedback ("too formal", "overuses questions"). Re-run stage 2 into the same folder
+  on all samples you have (the originals are usually not stored in the skill - that is fine, measure
+  the new ones; the scaffold keeps the old numbers as `references/profile.previous.json` so you can
+  weigh the two, and never overwrites `markers.json`). Re-read against the existing style guide and
+  revise it, plus markers and anchors: keep what still holds and what the user liked, fix what the
+  new material contradicts. Re-run stage 6 on one topic, repackage, and tell the user what changed.
+- **Profile only** - the user wants the analysis, not a text or a skill. Do stages 1-4 and deliver
+  the style guide as a document.
 
 When unsure, use Quick mode - a good first text is the best argument for building the skill.
 
@@ -50,14 +54,22 @@ When unsure, use Quick mode - a good first text is the best argument for buildin
 Work through these stages in order. Keep the user informed in plain language at each stage,
 but do not ask for permission at every step - this is a build task.
 
+If you cannot run code, do every stage by hand: estimate the metrics by counting a few
+paragraphs, write the files as text, and give the user the folder contents. The scripts make
+it faster and more reliable; they are not required.
+
 ### 1. Intake
 
 - **Get the sample** (pasted or uploaded) and save the plain text to `<work>/sample.txt`
-  (several files are fine).
+  (several files are fine). Strip front matter, footnotes, reader comments, and quotations that
+  are not by the writer; they pollute the profile. (Markdown, code, URLs and hard line wraps are
+  cleaned out by the scripts.)
 - **Judge if it is enough.** Under ~1,000 words gives only a sketch; 3,000-10,000 words across
   different parts is the sweet spot. For a book, choose a spread (opening, middle, a dialogue-heavy
   stretch, a reflective stretch) rather than only chapter one. If the sample is thin, say so, build
   anyway, and mark the profile as provisional.
+- **One voice per skill.** If the samples come from several writers, or one writer across very
+  different registers, say so and ask whether to build one skill per voice or a deliberate blend.
 - **Build mode only: ask only what you cannot infer**, at most three short questions, in one message:
   1. What will the finished skill write (essays, chapters, posts, emails...)? This sets the genres in its description.
   2. Whose writing is it - the user's own, or someone else's? (Affects how many excerpts to keep.)
@@ -66,12 +78,16 @@ but do not ask for permission at every step - this is a build task.
 
 ### 2. Measure
 
-Run the scaffold script. It measures the sample, writes `references/profile.json`, and
-copies the stats script into the new skill so it is self-contained:
+Run the scaffold script. It measures the sample, writes `references/profile.json` and a
+starter `references/markers.json`, and copies the stats script into the new skill so it is
+self-contained:
 
 ```bash
 python <skill-dir>/scripts/scaffold.py <style-slug>-writer <out> <work>/sample.txt
 ```
+
+The slug is lowercase ASCII words joined by hyphens, ending in `-writer`; transliterate
+non-Latin names (e.g. `nahj-hikayat-writer`).
 
 In Quick mode, measure without scaffolding: `python <skill-dir>/scripts/style_stats.py analyze <work>/sample.txt`.
 
@@ -110,6 +126,9 @@ Create, inside the scaffolded folder, using the templates in `references/generat
 - `SKILL.md` - essence, writing procedure, dials, guardrails. Keep it short (under ~100 lines).
 - `references/style-guide.md` - the full analysis from stage 4.
 - `references/anchors.md` - 5-10 short excerpts (one or two sentences each), each labelled with the trait it shows. If the source is a third party's published work, keep quoted material minimal and lean on paraphrased patterns; if it is the user's own writing you can be more generous while still keeping each anchor short.
+- `references/markers.json` - the machine-checkable version of the dosage and never-list (template
+  section 4b). Measure each dosage target on the sample with `style_stats.py check` and set the
+  range around it.
 
 Make the generated skill's `description` pushy and concrete: name the genres, the phrasings
 users will actually say (in the user's languages), and the "rewrite my draft in this voice" case.
@@ -122,31 +141,45 @@ conventions explicitly when the sample uses them.
 
 A style skill is only as good as what it writes on topics the source never touched.
 1. Choose two test topics unrelated to the source, one close to the source's genre and one further away (e.g. a product update, a short story scene).
-2. Following the generated skill's own procedure, write ~300-500 words for each, then run its drift check (`python scripts/style_stats.py compare references/profile.json draft.txt`).
-3. Read both drafts critically against the never-list. Fix the guide (not just the draft) where something felt off.
+2. Following the generated skill's own procedure, write ~300-500 words for each, then run from the skill folder:
+   ```bash
+   python scripts/style_stats.py compare references/profile.json draft.txt   # score, top fixes
+   python scripts/style_stats.py check references/markers.json draft.txt     # dosage, never-list
+   python scripts/style_stats.py overlap draft.txt <work>/sample.txt         # copying check
+   ```
+   Aim for a compare score of 70+, no never-list hits and no overlap. Numbers are hints; your reading decides.
+3. Read both drafts critically against the never-list. Fix the guide (not just the draft) where
+   something felt off, and add what you learned as a "drift watch-list" in the guide.
 4. Show the user one draft and ask what feels right and what feels off. For a sharper test, offer a blind check: three short paragraphs on the same topic, one original and two generated - can they tell which is real?
 5. Revise the style guide once or twice based on feedback. Stop when the user is satisfied; subjective work needs human judgment, not a benchmark.
 
-### 7. Package and deliver
+### 7. Validate, package, deliver
 
-- If the skill was written straight into the user's skills folder, it is already installed - say so.
-- Otherwise zip the folder so the zip contains `<style-slug>-writer/` at its root (use a
-  skill-creator packager if one is available, else any zip tool or
-  `python -c "import shutil; shutil.make_archive('<out>/<slug>', 'zip', '<out>', '<slug>')"`),
-  and hand the user the file with whatever file-sharing mechanism the environment offers.
+```bash
+python <skill-dir>/scripts/validate.py <out>/<slug> --source <work>/sample.txt   # must PASS
+python <skill-dir>/scripts/package.py <out>/<slug> <out>                         # writes <slug>.skill
+```
 
-Finish with a short message: the style's essence (one or two sentences), what was tested,
-where the skill is, and how to use it ("ask for a text and mention the style name" or "paste a
+- If the skill was written straight into the user's skills folder, it is already installed - say
+  so; packaging is optional then.
+- Otherwise hand the user the `.skill` file (a zip with `<slug>/` at its root) with whatever
+  file-sharing or skill-saving mechanism the environment offers.
+
+Finish with a short message: the style's essence (one or two sentences), what was tested and
+how it scored, where the skill is, and how to use it ("ask for a text and mention the style name" or "paste a
 draft and ask me to rewrite it in this voice").
 
 ## Guardrails
 
 - **Patterns, not passages.** Learning rhythm, structure and diction habits from a published work
   is ordinary stylistic study. Store patterns plus at most a few short anchors - never large passages.
+  `overlap` and `validate.py --source` enforce this.
 - **Original text in a manner, not forgery.** The output is new writing *in a style*. Do not
   present it as written by the source's author, invent quotes for real people, or write messages
   meant to be taken as coming from a real, identifiable person (e.g. an email "from" a CEO, a
-  statement "by" a politician) - unless that person is the user themself.
+  statement "by" a politician) - unless that person is the user themself. If the request is
+  clearly to impersonate someone to others, decline that part and offer a voice framed as
+  "inspired by", used openly.
 - **No deception at scale.** Decline to build voices meant for fake reviews, astroturfing, scams,
   or academic work that the user's institution forbids ghost-writing for.
 - **Facts stay facts.** Style never justifies making things up.
@@ -158,11 +191,13 @@ draft and ask me to rewrite it in this voice").
 - **Topic contamination** - encoding the sample's subject vocabulary as "style". The fix is the swap test.
 - **Averaging** - smoothing away exactly the odd choices that make the voice recognizable. Keep the oddities, with dosage.
 - **Over-fitting one genre** - a novelist's narration rules will not automatically fit a tweet. Flag what is inference.
-- **Copying** - reusing the sample's actual sentences. Anchors tune the ear; they are never source material.
+- **Copying** - reusing the sample's actual sentences. Anchors tune the ear; they are never source material. `overlap` catches the rest.
 
 ## Files in this skill
 
 - `references/style-dimensions.md` - the analysis lens (voice, syntax, diction, rhetoric, structure, fiction, language notes, swap test). Read in stage 3.
-- `references/generated-skill-template.md` - folder layout and templates for the generated skill's SKILL.md, style guide and anchors. Read in stages 4-5.
-- `scripts/style_stats.py` - `analyze` fingerprints a text; `compare` checks a draft against a saved profile.
-- `scripts/scaffold.py` - creates the new skill folder, measures the sample, copies the stats script.
+- `references/generated-skill-template.md` - folder layout and templates for the generated skill's SKILL.md, style guide, anchors and markers. Read in stages 4-5.
+- `scripts/style_stats.py` - `analyze` fingerprints a text; `compare` scores a draft against a saved profile and lists the top fixes; `check` counts dosage and never-list hits from markers.json; `overlap` finds copied passages.
+- `scripts/scaffold.py` - creates the new skill folder, measures the sample, writes starter markers, copies the stats script.
+- `scripts/validate.py` - quality gate for a generated skill (structure, placeholders, required sections, anchor size, markers, copying).
+- `scripts/package.py` - validates and zips a skill into an installable `.skill` file.

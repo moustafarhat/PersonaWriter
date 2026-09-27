@@ -40,8 +40,8 @@ class SkillFormat(unittest.TestCase):
         for folder in os.listdir(SKILLS):
             text = read("skills", folder, "SKILL.md")
             for path in set(re.findall(r"`((?:references|scripts)/[\w./-]+\.\w+)`", text)):
-                if path.startswith("references/profile") or path.startswith("references/style-guide") \
-                        or path.startswith("references/anchors"):
+                if path.startswith(("references/profile", "references/style-guide",
+                                    "references/anchors", "references/markers")):
                     continue  # files of the *generated* skill, not this one
                 with self.subTest(skill=folder, path=path):
                     self.assertTrue(os.path.exists(os.path.join(SKILLS, folder, path)), f"{path} is missing")
