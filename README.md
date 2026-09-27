@@ -41,6 +41,23 @@ Claude:  Measured 6,200 words. Your load-bearing traits: you open on a small con
 
 <!-- DEMO: add a real blind test here (one original paragraph + two generated, answer in a <details> block) or a GIF of the full flow. -->
 
+### Example: a skill built with PersonaWriter
+
+**[Arabic Critic Essay Writer](https://github.com/moustafarhat/arabic-critic-essay-writer)** was
+generated from a single 2,500-word Arabic music-criticism essay. It writes reviews (albums, films,
+books, series, exhibitions, games), cultural essays and opinion pieces in formal Arabic, in a
+reflective critic's voice: long qualified sentences landed by a short blunt one, "not X, but Y" as
+the engine of every thesis, one fair concession, and an ending that leaves the tension open.
+
+Look inside to see what PersonaWriter actually produces: a
+[style guide](https://github.com/moustafarhat/arabic-critic-essay-writer/blob/main/skills/arabic-critic-essay-writer/references/style-guide.md)
+built from decisions, a never-list, a drift watch-list learned while testing, a
+[markers.json](https://github.com/moustafarhat/arabic-critic-essay-writer/blob/main/skills/arabic-critic-essay-writer/references/markers.json)
+with measured dosage targets, and an
+[example essay](https://github.com/moustafarhat/arabic-critic-essay-writer/blob/main/examples/the-photos-we-never-look-at.md)
+on a topic the source never touched, with its check results. The example page also shows the first
+draft failing the dosage check for overusing the voice's signature moves, and what was cut to fix it.
+
 ## Install
 
 **Claude Code** (plugin marketplace):
