@@ -39,7 +39,45 @@ Claude:  Measured 6,200 words. Your load-bearing traits: you open on a small con
          Can you spot which of these three paragraphs is really yours?
 ```
 
-<!-- DEMO: add a real blind test here (one original paragraph + two generated, answer in a <details> block) or a GIF of the full flow. -->
+### Blind test: which one is real?
+
+The source is a 700-word personal essay about an old kettle
+([tests/fixtures/sample_en.txt](tests/fixtures/sample_en.txt)). One paragraph was held back, the
+voice was measured from the rest, and two new paragraphs were written in it about other stubborn
+objects. One of these three is the held-back original.
+
+> **1.** The umbrella, I should admit, does not work. It opens on the third attempt, and only if I
+> speak to it kindly. One rib is bent at an angle that suggests a former life of violence. I have
+> counted the leaks. I counted them in October, out of duty, and in November out of something
+> closer to grief, and by December I stopped counting and started walking a little faster, which
+> is not the same as staying dry but is not far from it.
+
+> **2.** The kettle, by the way, is terrible. It whistles in a key that no human song has ever used.
+> It takes eleven minutes to boil. I have timed it. I timed it on the first morning, out of
+> curiosity, and on the second morning out of disbelief, and on the third I stopped timing and
+> started waiting, which is a different activity altogether and one I recommend.
+
+> **3.** The car is worse. It starts in winter the way an old man rises from a low chair, in
+> stages, with commentary. The radio finds one station and keeps it. My neighbor, who knows about
+> cars, has offered twice to take it to someone. I thanked him both times. I did not explain that I
+> have come to need the four minutes it takes before it agrees to go, and that I spend them doing
+> nothing at all, which is harder than it sounds.
+
+<details>
+<summary>Answer and scores</summary>
+
+**2** is the original. 1 and 3 were generated.
+
+| Paragraph | `compare` score vs. the source profile | `overlap` with the source |
+|---|:-:|---|
+| 1. umbrella (generated) | 93/100 | no 8-word sequence shared |
+| 2. kettle (original) | 94/100 | it *is* the source |
+| 3. car (generated) | 94/100 | no 8-word sequence shared |
+
+The profile was measured without paragraph 2, so the original was scored the same way as the
+generated ones. To reproduce: drop paragraph 2 from the sample, run
+`style_stats.py analyze` on the rest, then `compare` each paragraph against that profile.
+</details>
 
 ### Example: a skill built with PersonaWriter
 
